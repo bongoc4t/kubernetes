@@ -3,12 +3,12 @@ kind: Service
 metadata:
   name: my-service
 spec:
-  type: NodePort
-  selector: #this is very common to use
+  type: NodePort #or ClusterIP or LoadBalancer
+  selector: #this is to trget the PODS of the service. Use the {labels} of the POD definition side
     app: MyApp
     type: frontend
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 80
-      nodePort: 31234 #range from 30000 - 32767
+      port: 80 #port of the SERVICE itself
+      targetPort: 80 #port of the POD
+      nodePort: 31234 #port of the NODE. range from 30000 - 32767
