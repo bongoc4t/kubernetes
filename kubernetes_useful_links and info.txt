@@ -1,3 +1,20 @@
+#- LINKS TO INTERESTING ARTICLES
+https://www.mirantis.com/blog/introduction-to-yaml-creating-a-kubernetes-deployment/ -> quick view of creating a deployment
+https://loft.sh/blog/kubernetes-probes-startup-liveness-readiness/
+https://laurinevala.medium.com/visualizing-kubernetes-resources-ee9d8c16d264  visual maps of Pods
+
+~
+#- MOST COMMON ISSUES
+https://grapeup.com/blog/common-kubernetes-failures-at-scale/
+https://www.itprotoday.com/hybrid-cloud/8-problems-kubernetes-architecture
+https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-1/
+https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-2/
+
+~
+#- GITHUBS OF INTEREST
+https://github.com/kodekloudhub/certified-kubernetes-administrator-course
+
+~
 #- KUBERNETES INFO
 #- WHAT IS IT?
 it is a container management technology developed by GOOGLE (later made open source in 2015) 
@@ -38,10 +55,7 @@ https://blog.pipetail.io/posts/2020-05-04-most-common-mistakes-k8s/
 - more tenants or envs in shared cluster
 - externalTrafficPolicy: Cluster
 - pet clusters + stressing the control plane too much
-~
-https://kubernetes.io/docs/concepts/configuration/overview/ -> configuration best practices
-~
-https://www.mirantis.com/blog/introduction-to-yaml-creating-a-kubernetes-deployment/ -> quick view of creating a deployment
+
 ~
 #- What's the difference between ClusterIP, NodePort and LoadBalancer service types in Kubernetes?
 A ClusterIP exposes the following:
@@ -73,6 +87,4 @@ ClusterIp exposure < NodePort exposure < LoadBalancer exposure
 ClusterIp = Expose service through k8s cluster with ip/name:port
 NodePort = Expose service through Internal network VMs also external to k8s ip/name:port
 LoadBalancer = Expose service through External world or whatever you defined in your LB.
-~
-https://github.com/kodekloudhub/certified-kubernetes-administrator-course
 ~

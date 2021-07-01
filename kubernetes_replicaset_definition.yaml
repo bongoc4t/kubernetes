@@ -1,20 +1,18 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: frontend
+  name: simple-app
   labels:
-    app: guestbook
-    tier: frontend
+    app: App1
 spec:
-  # modify replicas according to your case
   replicas: 3
-  selector:
+  selector: #this is used for Labels and Selectors, must be the same as {pod.template.labels.*}
     matchLabels:
-      tier: frontend
+      app: App1
   template:
     metadata:
       labels:
-        tier: frontend
+        app: App1
     spec:
       containers:
       - name: php-redis

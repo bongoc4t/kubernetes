@@ -85,3 +85,31 @@ SERVICE OPTIONS:
 NodePort = Expose service through Internal network VMs also external to k8s ip/name:port
 ClusterIp = Expose service through k8s cluster with ip/name:port
 LoadBalancer = Expose service through External world or whatever you defined in your LB.
+
+#--SCHEDULER--#
+#example in the kubernetes_pod_definition.yaml
+#pod can be assigned to a fixed node to being deployed instead of doing it randomly
+#another way to do it is creating a Pod binding object -> Pod-bind-definition.yaml
+
+#-LABELS AND SELECTORS
+#example in kubernetes_replicaset_definition.yaml and service-definition.yaml
+#are used in the replicaset-definition or service-definition as it has to go over the pod definition to match the label of the pods
+kubectl get pods --selector env=ENVIRONMENT
+
+#- TAINTS AND TOLERATIONS
+#example in
+#used to check what pods can be scheduled on what nodes
+#taints=nodes toleration=pods
+kubectl taint nodes NODE_NAME key=value:taint-effect # taint-efect options-> Noschedule | PreferNoSchedule | NoExecute
+kubectl taint node master NODE_NAME:taint-effect- #to remove a taint
+kubectl describe nodes NODE_NAME | grep -i Taints #to check the status of taint
+
+
+
+#ROLLOUT
+2 way of doing it:
+        1- Recreate #this will cause an APP downtime as all the pods get removed and new ones recreated.
+        2- Rolling #this use the Blue/Green technique. 1 up, 1 down. It's the default 
+kubectl rollout status DEPLOYMENT #check the status of deployment
+                history DEPLOYMENT #check the history of deployment
+        set POD_NAME DEPLOYMENT IMAGE=IMAGE:VERSION #this is an alternative and not recomended as it creates another YAML file.
