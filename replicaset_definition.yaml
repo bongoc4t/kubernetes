@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: simple-app
+  labels:
+    app: App1
+spec:
+  replicas: 3
+  selector: #this is used for Labels and Selectors, must be the same as {pod.template.labels.*}
+    matchLabels:
+      app: App1
+  template:
+    metadata:
+      labels:
+        app: App1
+    spec:
+      containers:
+      - name: php-redis
+        image: gcr.io/google_samples/gb-frontend:v3

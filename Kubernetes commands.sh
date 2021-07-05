@@ -5,6 +5,7 @@ kubectl run #CLI
 kubectl apply #YAML/JSON
 kubectl create #CLI & YAML/JSON
 
+#-BASICS
 kubectl run NAME_POD --image=IMAGE #Start a single pod of IMAGE
                                     --port=XXXX #Expose port XXXX
                                     --replicas=X #Start a replicated pod                                 
@@ -31,7 +32,7 @@ kubectl config set-context $(kubectl config current-context) --namespace=NAMESPA
 
 kubectl get all #get all the deployment, ReplicaSets and Pods created
 
-kubectl run POD --image=IMAGE #create a pod. From v1.18 th command only creates a pod instead of deployment
+kubectl run POD --image=IMAGE #create a pod. From v1.18 the command only creates a pod instead of deployment
 kubectl get pods #get a simple info of pods
 kubectl get pods -o wide #get a simple info + Node where is attached
 kubectl describe pod POD #get info of the pod
@@ -43,6 +44,8 @@ kubectl delete ReplicaSet NAME_REPLICA
 kubectl replace -f CONFIG_FILE
 kubectl edit replicaset CONFIG_FILE
 kubectl scale replicaset CONFIG_FILE --replicas=X
+
+kubectl get pod POD_NAME -o yaml >FILE.YAML #copy the configuration file. With this you can remove the old pod and update the configuration
 
 #NODES (NO in short)
 kubectl get no
@@ -94,17 +97,29 @@ LoadBalancer = Expose service through External world or whatever you defined in 
 #-LABELS AND SELECTORS
 #example in kubernetes_replicaset_definition.yaml and service-definition.yaml
 #are used in the replicaset-definition or service-definition as it has to go over the pod definition to match the label of the pods
-kubectl get pods --selector env=ENVIRONMENT
+#types of NodeAffinity
+        #requiredDuringSchedulingIgnoredDuringExecution > must/hard 
+        #preferredDuringSchedulingIgnoredDuringExecution > soft/light
+        #requiredDuringSchedulingRequiredDuringExecution > hardest, will stop all pods that not have the affinity reqs.
+
+kubectl label nodes NODE_NAME label-key=label-value #label a node
+        get pods --selector env=ENVIRONMENT
 
 #- TAINTS AND TOLERATIONS
-#example in
+#example in pod_definition.yaml
 #used to check what pods can be scheduled on what nodes
 #taints=nodes toleration=pods
 kubectl taint nodes NODE_NAME key=value:taint-effect # taint-efect options-> Noschedule | PreferNoSchedule | NoExecute
 kubectl taint node master NODE_NAME:taint-effect- #to remove a taint
 kubectl describe nodes NODE_NAME | grep -i Taints #to check the status of taint
 
-
+#- SECRETS
+#example in pod_definition.yaml and the secret file; secrets_definition.yaml
+kubectl create secret generic SECRET_NAME --from-literal=KEY=VALUE #imperative way of create a secret
+        create -f 
+        get secrets
+        get secrets APP_NAME -o yaml #to check the secrets enconded
+        describe secrets 
 
 #ROLLOUT
 2 way of doing it:
@@ -113,3 +128,78 @@ kubectl describe nodes NODE_NAME | grep -i Taints #to check the status of taint
 kubectl rollout status DEPLOYMENT #check the status of deployment
                 history DEPLOYMENT #check the history of deployment
         set POD_NAME DEPLOYMENT IMAGE=IMAGE:VERSION #this is an alternative and not recomended as it creates another YAML file.
+
+#--CLUSTER MAINTENANCE--#
+kubectl drain NODE_NAME #workloads are moved to other nodes and node as marked as unscheduled
+        uncordon NODE_NAME #make the node available again
+        cordon NODE_NAME #make the node unabled to schedule new pods, but old ones will work till end cycle
+
+#---CLUSTER UPGRADE PROCESS
+#For the first control plane node
+kubeadm version #check the version
+kubeadm upgrade plan #check the planned version
+kubeadm upgrade apply VERSION
+#(If you have) For the other control plane nodes do the asme as the control plane node but using:
+kubeadm upgrade NODE_NAME
+kubeadm upgrade apply.
+#drain the node, this means prepare it for maintenance by marking it unscheduable
+kubectl drain NODE_NAME --ignore-daemonsets
+#upgrade the kubelet and kubectl
+apt-get update && \
+    apt-get install -y --allow-change-held-packages kubelet=VERSION kubectl=VERSION
+#restart kubelet
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+#bring the node back
+kubectl uncordon NODE_NAME
+#now you can proceed to do the same with the workers.The upgrade procedure on worker nodes should be executed 
+#one node at a time or few nodes at a time, without compromising the minimum required capacity for running your workloads.
+apt-get update && \
+        apt-get install -y --allow-change-held-packages kubeadm=VERSION
+kubeadm upgrade NODE_NAME
+kubectl drain NODE_NAME --ignore-daemonsets
+apt-get update && \
+        apt-get install -y --allow-change-held-packages kubelet=VERSION kubectl=VERSION
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+kubectl uncordon NODE_NAME
+#finally verify it
+kubectl get nodes
+
+#--- SECURITY --REVIEW TWICE OR SEVERAL TIMES TO UNDERSTAND
+#NOTES
+Certificate Public Keys= *.crt *.pem
+Private Key = *.key *-key.pem
+---Client certificates for clients:
+admin
+scheduler
+controller-manager
+kube-proxy
+apiserver-kubelet-client
+apiserver-etcd-client
+kubelet-client
+---Server Certificates for servers:
+etcd-server
+api-server
+kubelet
+#CREATE A SELF-SIGNED CA CERTIFICATE
+1- openssl genrsa -out ca.key 2048 #create a private key
+2- openssl req -new -key ca.key -subj "/CN=KUBERNETES-CA" -out ca.csr #to create a certificate signing request (cert with all details but no signature)
+3- openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt #sign the certificate create in last step, in this case, selfsigned
+The steps done here create a CA for Kubernetes Cluster, then we have to repeat steps 1 and 2 for the admin Certificate
+but instead of CN=KUBERNETES-CA we create a selfsigned kube-admin ("/CN=kube-admin"). then we sign it with the CA key pair;
+- openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -out admin.crt #this are based in the last example
+To know who is a member of admin we should create a group and this info should be added in step 2 next to CN ("/CN=kube-admin/O=system:masters")
+in this case the group name is called "masters".
+We should repite this steps with kube-scheduler, kube-contreller-manager and kube-proxy. 
+IMPORTANT; all the components related to the control-plane have to have the prefix SYSTEM [kube-scheduler, kube-contreller-manager and kube-proxy]
+After this is done you can move this parameters to a kube-config.yaml*
+All the Client Certificates for clients have to have a copy of the public certificate (ca.crt).
+#KUBE API SERVER
+1- create an openssl.cnf (config file)
+2- openssl req -new -key apiserver.key -subj "/CN=kube-apiserver" -out apiserver.csr -config openssl.cnf
+3- openssl x509 -req -in apiserver.csr -CA ca.crt -CAkey ca.key -out apiserver.crt
+#COMMANDS
+kubectl config use-context USER@CLUSTER #change the context of the user
+curl http://localhost:6443 -k #check the list of available API groups
+curl http://localhost:6443/apis -k | grep "name" #it will return all the supported groups

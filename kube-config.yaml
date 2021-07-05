@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Config
+current-context: kubebernetes-admin@kubernetes
+
+clusters:
+- name: kubernetes
+  cluster:
+      certificate-authority: ca.crt
+      server: https://kube-apiserver:6443
+
+contexts:
+- name: kubebernetes-admin@kubernetes #users name @ clusters name
+  context:
+    cluster: kubernetes
+    user: kubebernetes-admin
+
+users:
+- name: kubebernetes-admin
+  user:
+    client-certificate: admin.crt
+    client-key: admin.key
