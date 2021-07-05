@@ -203,3 +203,13 @@ All the Client Certificates for clients have to have a copy of the public certif
 kubectl config use-context USER@CLUSTER #change the context of the user
 curl http://localhost:6443 -k #check the list of available API groups
 curl http://localhost:6443/apis -k | grep "name" #it will return all the supported groups
+
+#RBAC
+kubectl create -f createuser-rol-binding.yaml #create a file of the binding
+kubectl get roles #get a list of the roles
+kubectl describe role ROLE #get a description of the role
+kubectl describe rolebinding ROLEBINDING
+kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... #check access
+kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... --as USER #to impersonate and check users access
+kubectl create -f createcluster-role-binding.yaml #create a file of the binding
+we have to create a role (create-role.yaml) then we have to create a rule binding (createuser-rol-binding.yaml). Same with cluster roles
