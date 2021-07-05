@@ -5,7 +5,7 @@ current-context: kubebernetes-admin@kubernetes
 clusters:
 - name: kubernetes
   cluster:
-      certificate-authority: ca.crt
+      certificate-authority: /etc/kubernetes/pki/ca.crt #better to use the full path
       server: https://kube-apiserver:6443
 
 contexts:
@@ -13,7 +13,7 @@ contexts:
   context:
     cluster: kubernetes
     user: kubebernetes-admin
-
+    namespace: namespace #this can be useful to adapt to namespaces too
 users:
 - name: kubebernetes-admin
   user:
