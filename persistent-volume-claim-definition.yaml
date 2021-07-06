@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: user-claim
+spec:
+  accessModes:
+    - ReadWriteOnce 
+    - ReadOnlyMany
+    - ReadWriteMany
+  
+  storageClassName: google-storage #example name but this is for dynamic provisioning of storage. storage-class-definition.yaml
+
+  resources:
+    requests:
+      storage: 500Mi
+
+
+
+
+#--- COMMANDS
+#kubectl create -f PVC-FILE
+#kubectl get persistentvolumeclaim
+#kubectl delete persistentvolumeclaim user-claim > by default the persistentVolumeReclaimPolicy is setup to "Retain", 
+                                                  #that means that the admin have to delete it manually

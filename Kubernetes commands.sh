@@ -35,6 +35,7 @@ kubectl get all #get all the deployment, ReplicaSets and Pods created
 kubectl run POD --image=IMAGE #create a pod. From v1.18 the command only creates a pod instead of deployment
 kubectl get pods #get a simple info of pods
 kubectl get pods -o wide #get a simple info + Node where is attached
+kubectl get pod NAME -o yaml #get config of the pod in yaml
 kubectl describe pod POD #get info of the pod
 kubectl create deployment POD --image=IMAGE #create a pod and a deployment for it
 
@@ -203,7 +204,6 @@ All the Client Certificates for clients have to have a copy of the public certif
 kubectl config use-context USER@CLUSTER #change the context of the user
 curl http://localhost:6443 -k #check the list of available API groups
 curl http://localhost:6443/apis -k | grep "name" #it will return all the supported groups
-
 #RBAC
 kubectl create -f createuser-rol-binding.yaml #create a file of the binding
 kubectl get roles #get a list of the roles
@@ -213,3 +213,30 @@ kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... #check access
 kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... --as USER #to impersonate and check users access
 kubectl create -f createcluster-role-binding.yaml #create a file of the binding
 we have to create a role (create-role.yaml) then we have to create a rule binding (createuser-rol-binding.yaml). Same with cluster roles
+
+#--- STORAGE
+File System:
+/var/lib/docker/aufs
+                containers
+                image
+                volumes
+                
+Storage Drivers: AUFS | ZFS | BTRFS | DEVICE MAPPER | OVERLAY
+Volume Drivers: local | AZURE FILE STORAGE | CONVOY | FLOCKER | GCE-DOCKER | GLUSTER-FS | NETAPP |REXRAY | VMWARE VSPHERE STORAGE
+
+docker volume create DATA_VOLUME #this will create a persisten folder in /var/lib/docker/volumes called DATA_VOLUME 
+docker run -v DATA_VOLUME:/var/lib/mysql mysql #an example to attach the new volume. you even can skip the creatin phase and create
+                                               #it with this command. This is a "Volume" mount. OLD WAY
+docker run -v /path/to/VOLUME:/var/lib/mysql mysql #this create a "binding" mount. OLD WAY
+docker run --mount type=bind,source=/data/mysql,target=/var/lib/mysql IMAGE #this is the new way to mount it
+
+#CREATE A PERSISTENT VOLUME STEPS
+1- copy pod configuration : kubectl get pod POD -O yaml > name.yaml
+2- add the "volumeMounts" section #pod-definition-volumes.yaml example
+3- add the "volumes" section #pod-definition-volumes.yaml example
+4- if required, delete the old pod and create the new one: kubectl create -f FILE
+
+
+
+#--- NETWORK
+cat /etc/cni/net.d/*.conf #here we can find the IP address management

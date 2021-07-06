@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: Persistent-Volume-Name
+spec:
+  accessModes: #all the possible modes here
+    - ReadWriteOnce 
+    - ReadOnlyMany
+    - ReadWriteMany
+
+  capacity:
+    storage: '1Gi'
+  
+  hostPath:
+    path: /path/to/folder
+
+  awsElasticBlockStore:
+    volumeID: <volumeID>
+    fsType: ext4
+
+
+#--- COMMANDS TO USE
+#kubectl create -f PV-FILE
+#kubectl get persistentvolume

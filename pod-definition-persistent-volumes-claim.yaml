@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: POD_NAME
+spec:
+  containers:
+  - name: POD_NAME
+    image: IMAGE
+    volumeMounts:
+      - mountPath: "/path/to/mount"
+        name: mypod
+  
+  volumes:
+    - name: mypod
+      persistentVolumeClaim:
+        claimName: user-claim #this name is het in the file persistent-volume-claim-definition.yaml under metadata.name
+
+#--- COMMANDS
+#kubectl get persistentvolumeclaim (or pvc)
