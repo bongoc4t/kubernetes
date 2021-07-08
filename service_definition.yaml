@@ -4,11 +4,22 @@ metadata:
   name: my-service
 spec:
   type: NodePort #or ClusterIP or LoadBalancer
-  selector: #this is to trget the PODS of the service. Use the {labels} of the POD definition side
+  selector: #this is to target the PODS of the service. must be the same as {pod.template.labels.*}
+    name: NameApp
     app: MyApp
     type: frontend
   ports:
     - protocol: TCP
-      port: 80 #port of the SERVICE itself
+      port: 80 #port of the SERVICE itself, to check it under PORT = 80:31234. left port is "port", the right is "nodePort"
       targetPort: 80 #port of the POD
       nodePort: 31234 #port of the NODE. range from 30000 - 32767
+
+
+#NOTES
+#SERVICE OPTIONS:
+#NodePort = Expose service through Internal network VMs also external to k8s ip/name:port
+#ClusterIp = Expose service through k8s cluster with ip/name:port
+#LoadBalancer = Expose service through External world or whatever you defined in your LB.
+
+#the "spec.selector" provide a list of labels to tag the service to the pod. You have to add here
+# the "metadata.labels.*" to the "spec.selector" of the service-definition file.

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: POD_NAME
+spec:
+  containers:
+  - name: POD_NAME
+    image: IMAGE
+
+    volumeMounts: #this is to mount volumes
+      - mountPath: /log
+        name: log-volume-name
+
+  volumes:
+  - name: data-volume
+    hostPath:
+      #ensure that the file directory is created
+      path: /data #in this example is local file
+      type: Directory
+  
+  - name: data-volume2
+    awsElasticBlockStore:
+      #ensure that the VolumeID is created
+      volumeID: <VolumeID> #in this example is with AWS EBS
+      fsType: ext4
+
+

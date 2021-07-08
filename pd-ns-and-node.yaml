@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: POD_NAME
+  namespace: NS #This field is needed to assign a namespace
+
+spec:
+  nodeName: NODE #to select the node where it will be scheduled
+  containers:
+  - name: POD_NAME
+    image: IMAGE

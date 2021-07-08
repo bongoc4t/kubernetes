@@ -16,3 +16,7 @@ spec:
       containers:
       - name: monitoring-agent
         image: monitoring-agent
+
+#NOTES
+#Daemon sets are the perfect solution for collect logs and monitoring
+#kube-proxy is a good example of daemon sets, or a networking pod as Weave-net

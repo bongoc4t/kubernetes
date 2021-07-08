@@ -26,27 +26,18 @@ minikube stop
 minikube delete #in case you get "machine does not exist" to clear the minikube local state
 minikube start --driver=virtualbox #to start minikube in virtualbox
 minikube start --nodes X -p NAME_MULTINODE 
-HOME SERVER LAUNCH > minikube -p multinode-lab --nodes 2 start
 
-kubectl config set-context $(kubectl config current-context) --namespace=NAMESPACE_NAME #switch the namespace workaround
-
-kubectl get all #get all the deployment, ReplicaSets and Pods created
-
-kubectl run POD --image=IMAGE #create a pod. From v1.18 the command only creates a pod instead of deployment
-kubectl get pods #get a simple info of pods
-kubectl get pods -o wide #get a simple info + Node where is attached
-kubectl get pod NAME -o yaml #get config of the pod in yaml
-kubectl describe pod POD #get info of the pod
-kubectl create deployment POD --image=IMAGE #create a pod and a deployment for it
-
-kubectl create -f CONFIG_FILE
-kubectl get ReplicaSet
-kubectl delete ReplicaSet NAME_REPLICA
-kubectl replace -f CONFIG_FILE
-kubectl edit replicaset CONFIG_FILE
-kubectl scale replicaset CONFIG_FILE --replicas=X
-
+#IMPORTANT COMMANDS
 kubectl get pod POD_NAME -o yaml >FILE.YAML #copy the configuration file. With this you can remove the old pod and update the configuration
+kubectl exec etcd-master -n kube-system etcdctl get --prefix -keys-only #to list all keys stored by kubernetes
+ps -aux | grep kube-apiserver #view api-server options
+cat /etc/kubernetes/manifests/kube-apiserver.yaml #view api-server options in kubeadm
+ps -aux | grep kube-controller-manager #view controller-manager options
+
+#DECLARATIVE WAY
+kubectl create -f CONFIG_FILE
+kubectl replace -f CONFIG_FILE
+kubectl apply -f CONFIG_FILE
 
 #NODES (NO in short)
 kubectl get no
@@ -55,22 +46,21 @@ kubectl get no
         get no -o YAML
         get node --selector=[LABEL_NAME]
         top node NODE_NAME
+        label nodes NODE_NAME label-key=label-value #label a node
 
 #PODS (po)
 kubectl get po
         get po -o wide
         describe po
         get po --show-labels
+        get po --selector env=ENVIRONMENT
         get po -l app=APP_NAME
         get po -o YAML
         get pod POD_NAME -o YAML --export
         get pod POD_NAME -o YAML --export > NAME_FILE.YAML
         get pods --field-selector stats.phase=running
-
-#NAMESPACES (NS)
-kubectl get ns
-        get ns -o YAML
-        describe ns
+        get pods --namespace=NAMESPACE #get pod from that namespace, you can also put "-n" and the namespace
+        get all --selector 
 
 #DEPLOYMENT (DEPLOY)
 kubectl get deploy
@@ -78,20 +68,27 @@ kubectl get deploy
         get deploy -o wide
         get deploy -o YAML
 
+#NAMESPACES (NS)
+#To create a pod in a selected namespace you hae to add this: metadata.namespace to the pod-definition file
+#Example of namespace creation: namespace-definition.yaml
+kubectl get ns
+        get ns -o YAML
+        describe ns
+        config set-context $(kubectl config current-context) --namespace=NAMESPACE_NAME #switch the namespace workaround
+        create -f namespace-definition.yaml #I use a file that I created as example. Very used command
+        get pods --all-namespaces #check all the pods in all namespaces
+
 #SERVICES (SVC)
 kubectl get svc
         describe svc
         get svc -o wide
                 -o YAML
                 --show-labels
-
-SERVICE OPTIONS:
-NodePort = Expose service through Internal network VMs also external to k8s ip/name:port
-ClusterIp = Expose service through k8s cluster with ip/name:port
-LoadBalancer = Expose service through External world or whatever you defined in your LB.
+        create -f svc-definition.yaml #to create the configuration based on the file.
+        
 
 #--SCHEDULER--#
-#example in the kubernetes_pod_definition.yaml
+#example in 
 #pod can be assigned to a fixed node to being deployed instead of doing it randomly
 #another way to do it is creating a Pod binding object -> Pod-bind-definition.yaml
 
@@ -103,9 +100,6 @@ LoadBalancer = Expose service through External world or whatever you defined in 
         #preferredDuringSchedulingIgnoredDuringExecution > soft/light
         #requiredDuringSchedulingRequiredDuringExecution > hardest, will stop all pods that not have the affinity reqs.
 
-kubectl label nodes NODE_NAME label-key=label-value #label a node
-        get pods --selector env=ENVIRONMENT
-
 #- TAINTS AND TOLERATIONS
 #example in pod_definition.yaml
 #used to check what pods can be scheduled on what nodes
@@ -113,6 +107,25 @@ kubectl label nodes NODE_NAME label-key=label-value #label a node
 kubectl taint nodes NODE_NAME key=value:taint-effect # taint-efect options-> Noschedule | PreferNoSchedule | NoExecute
 kubectl taint node master NODE_NAME:taint-effect- #to remove a taint
 kubectl describe nodes NODE_NAME | grep -i Taints #to check the status of taint
+
+#- LABEL NODES
+#example in pd-labels-and-selectors.yaml; spec.nodeSelector
+kubectl label nodes NODE_NAME key=value
+
+#- DAEMON SETS
+kubectl get daemonsets
+        describe daemonsets DAEMON_NAME
+
+#- MULTIPLE SCHEDULERS
+kubectl get events
+        logs SCHEDULER_NAME --name-space=NAMESPACE_NAME #to check the logs
+
+#--LOGGING AND MONITORING--#
+#example pd-event-simulator.yaml
+kubectl top node
+        top pod
+
+
 
 #- SECRETS
 #example in pod_definition.yaml and the secret file; secrets_definition.yaml
@@ -240,3 +253,6 @@ docker run --mount type=bind,source=/data/mysql,target=/var/lib/mysql IMAGE #thi
 
 #--- NETWORK
 cat /etc/cni/net.d/*.conf #here we can find the IP address management
+ps aux | grep kube-api-server #check the range of the service ip cluster default
+kubectl -n kube-system logs NETWORK_POD #check the logs for the CNI pod
+kubectl -n kube-system logs KUBE-PROXY #check what type of proxy is configured

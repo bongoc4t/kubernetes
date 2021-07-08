@@ -15,15 +15,6 @@ spec:
   - name: POD_NAME2
     image: IMAGE
     
-    #this is for the resource limitations, you can set the limits here
-    resources: #inside container
-      requests:
-        memory: '1Gi'
-        cpu: 1
-      limits:
-        memory: "2Gi"
-        cpu: 2
-    
     #this is from the secrets and how to inject them
     envFrom: #inside container
       - secretRef:
