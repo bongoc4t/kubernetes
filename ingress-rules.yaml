@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-example-paths
+spec:
+  rules:
+  #in this example I put another segmentation with "host" as this can be done with subdomains too. remember it's an ARRAY
+  - host: host1.myexample.com
+    http:
+      paths:
+      - path: /web-path-1
+        #this is the same as from the ingress.yaml file copied from spec.backend, and as an array it can have multiple paths
+        backend:
+          serviceName: example-service
+          servicePort: 80

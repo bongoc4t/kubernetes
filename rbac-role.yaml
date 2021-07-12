@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list", "get", "create"]
+
+- apiGroups: [""]
+  resources: ["ConfigMap"]
+  verbs: ["create"]
+#NOTES
+#this is a document that we have to create specifying the role and what the subject can do.
+#as an array we can create several rules, in this example we create a role for pods and configMaps
+
+#After this, the nex step is to link the user to a role. for this we have to create a new object called: RoleBinding
+#for this example: createuser-role-binding.yaml
+
+#IMPORTANT > ROLES are created within a namespace, if you not specify a metadata.namespace it will setup it in the 
+#default namespaces.

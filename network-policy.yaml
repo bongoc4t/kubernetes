@@ -16,7 +16,7 @@ spec:
     - podSelector:
         matchLabels:
           name: api-pod
-      namespaceSelector:
+      namespaceSelector: #this is to limit the access based on the namespace as all pods with the label "ingres.podSelector.matchLabels.name" can access.
         matchLabels:
           name: prod
     - ipBlock:

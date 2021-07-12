@@ -18,7 +18,3 @@ spec:
     volumeID: <volumeID>
     fsType: ext4
 
-
-#--- COMMANDS TO USE
-#kubectl create -f PV-FILE
-#kubectl get persistentvolume

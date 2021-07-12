@@ -18,7 +18,5 @@ spec:
 
 
 #--- COMMANDS
-#kubectl create -f PVC-FILE
-#kubectl get persistentvolumeclaim
-#kubectl delete persistentvolumeclaim user-claim > by default the persistentVolumeReclaimPolicy is setup to "Retain", 
+#by default the persistentVolumeReclaimPolicy is setup to "Retain", 
                                                   #that means that the admin have to delete it manually

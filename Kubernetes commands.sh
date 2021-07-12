@@ -121,11 +121,27 @@ kubectl get events
         logs SCHEDULER_NAME --name-space=NAMESPACE_NAME #to check the logs
 
 #--LOGGING AND MONITORING--#
-#example pd-event-simulator.yaml
 kubectl top node
         top pod
 
+#-- APPLICATION LIFECYCLE MANAGEMENT --#
+kubctl rollout status deployment/DEPLOYMENT_NAME #remove all the replicas and then recreate it
+kubectl rollout history deployment/DEPLOYMENT_NAME
+kubectl describe deployment DEPLOYMENT_NAME #check how the changes were done
+#default strategy is "RollOut" but you can change it manually creating in deployment: spec.strategy.type
+#to make the updates of the image we have to change in the deployment file "spec.template.spec.containers.name"
+#then use "kubectl apply -f DEPLOYMENT_NAME.yaml".
+#you can update the image with "kubectl set image DEPLOYMENT_NAME IMAGE=IMAGE_VER" but this will not update the 
+#deployment file.
 
+#- VARIABLES, CONFIGMAPS, SECRETS -> IN IMPERATIVE WAY
+#files for reference: pd-variables, pd-secrets, pd-configMap
+kubecnt get configmaps
+        get secrets
+        describe configmap
+        describe secrects
+        create configmap CONFIG_NAME --from-literal=KEY=VALUE
+        create secret generic SECRET_NAME --from-literal=KEY=VALUE
 
 #- SECRETS
 #example in pod_definition.yaml and the secret file; secrets_definition.yaml
@@ -144,16 +160,21 @@ kubectl rollout status DEPLOYMENT #check the status of deployment
         set POD_NAME DEPLOYMENT IMAGE=IMAGE:VERSION #this is an alternative and not recomended as it creates another YAML file.
 
 #--CLUSTER MAINTENANCE--#
+#Pod-eviction-timeout: time to a pod to come back online after a node goes down. Default = 5 minutes
 kubectl drain NODE_NAME #workloads are moved to other nodes and node as marked as unscheduled
         uncordon NODE_NAME #make the node available again
         cordon NODE_NAME #make the node unabled to schedule new pods, but old ones will work till end cycle
 
+#VERSIONING
+#None of the components should be higher version that kube-apiserver
+#controller-manager and kube-scheduler can be 1 version lower
+
 #---CLUSTER UPGRADE PROCESS
-#For the first control plane node
+#first in control plane node
 kubeadm version #check the version
 kubeadm upgrade plan #check the planned version
 kubeadm upgrade apply VERSION
-#(If you have) For the other control plane nodes do the asme as the control plane node but using:
+#(If you have) For the other control plane nodes do the same as the control plane node but using:
 kubeadm upgrade NODE_NAME
 kubeadm upgrade apply.
 #drain the node, this means prepare it for maintenance by marking it unscheduable
@@ -180,10 +201,29 @@ kubectl uncordon NODE_NAME
 #finally verify it
 kubectl get nodes
 
-#--- SECURITY --REVIEW TWICE OR SEVERAL TIMES TO UNDERSTAND
+#BACKUP RESOURCE CONFIGS
+kubectl get all --all-namespaces -o yaml > ALL-DEPLOY-SERVICES.yaml #backup of the configuration
+ETCDCTL_APY=3 etcdctl snapshot save NAME.db #backup of a ETCD database
+ETCDCTL_APY=3 etcdctl snapshot status NAME.db #check the status of the ETCD backup
+#to restore the ETCD db
+1- service kube-apiserver stop #stop the kube-apiserver service
+2- ETCDCTL_APY=3 etcdctl snapshot restore NAME.db --data-dir /PATH/TO/BACKUP #restore the backup
+3- point in the etcd.service the path /PATH/TO/BACKUP #when ETCD restores from a backup it initialize a new cluster
+                                                      #configuration and configures the members of ETCD as new membeers 
+                                                      #to new cluster. this is to prevent a new member to joining an 
+                                                      #existing cluster. 
+                                                      #Runing this command a new path is created pointing to the /PATH.
+                                                      #add the new path to the etcd.service
+                                                      #PATH of etcd.service = /etc/kubernetes/manifests/etcd.yaml
+4- systemctl daemon-reload
+5- service etcd restart
+6- service kube-apiserver start
+
+#--- SECURITY --
 #NOTES
-Certificate Public Keys= *.crt *.pem
-Private Key = *.key *-key.pem
+#Certificate Public Keys= *.crt *.pem
+#Private Key = *.key *-key.pem
+#location of the manifests: /etc/kubernetes/manifests/*.yaml
 ---Client certificates for clients:
 admin
 scheduler
@@ -210,10 +250,11 @@ IMPORTANT; all the components related to the control-plane have to have the pref
 After this is done you can move this parameters to a kube-config.yaml*
 All the Client Certificates for clients have to have a copy of the public certificate (ca.crt).
 #KUBE API SERVER
-1- create an openssl.cnf (config file)
+1- create an openssl.cnf (config file) #created as an example in this github
 2- openssl req -new -key apiserver.key -subj "/CN=kube-apiserver" -out apiserver.csr -config openssl.cnf
 3- openssl x509 -req -in apiserver.csr -CA ca.crt -CAkey ca.key -out apiserver.crt
 #COMMANDS
+#without setup a context it will get th default one found in $HOME/.kube/config
 kubectl config use-context USER@CLUSTER #change the context of the user
 curl http://localhost:6443 -k #check the list of available API groups
 curl http://localhost:6443/apis -k | grep "name" #it will return all the supported groups
@@ -225,7 +266,7 @@ kubectl describe rolebinding ROLEBINDING
 kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... #check access
 kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... --as USER #to impersonate and check users access
 kubectl create -f createcluster-role-binding.yaml #create a file of the binding
-we have to create a role (create-role.yaml) then we have to create a rule binding (createuser-rol-binding.yaml). Same with cluster roles
+kubectl api-resources --namespaced=false #check the resources for a node/cluster
 
 #--- STORAGE
 File System:
@@ -234,8 +275,8 @@ File System:
                 image
                 volumes
                 
-Storage Drivers: AUFS | ZFS | BTRFS | DEVICE MAPPER | OVERLAY
-Volume Drivers: local | AZURE FILE STORAGE | CONVOY | FLOCKER | GCE-DOCKER | GLUSTER-FS | NETAPP |REXRAY | VMWARE VSPHERE STORAGE
+#Storage Drivers: AUFS | ZFS | BTRFS | DEVICE MAPPER | OVERLAY
+#Volume Drivers: local | AZURE FILE STORAGE | CONVOY | FLOCKER | GCE-DOCKER | GLUSTER-FS | NETAPP |REXRAY | VMWARE VSPHERE STORAGE
 
 docker volume create DATA_VOLUME #this will create a persisten folder in /var/lib/docker/volumes called DATA_VOLUME 
 docker run -v DATA_VOLUME:/var/lib/mysql mysql #an example to attach the new volume. you even can skip the creatin phase and create
