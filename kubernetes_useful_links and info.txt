@@ -8,7 +8,8 @@ https://laurinevala.medium.com/visualizing-kubernetes-resources-ee9d8c16d264  vi
 https://grapeup.com/blog/common-kubernetes-failures-at-scale/
 https://www.itprotoday.com/hybrid-cloud/8-problems-kubernetes-architecture
 https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-1/
-https://kukulinski.com/10-most-common-reasons-kubernetes-deployments-fail-part-2/
+https://pythonspeed.com/articles/dont-need-kubernetes/
+https://learnk8s.io/troubleshooting-deployments
 
 ~
 #- GITHUBS OF INTEREST

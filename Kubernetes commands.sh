@@ -267,6 +267,11 @@ kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... #check access
 kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... --as USER #to impersonate and check users access
 kubectl create -f createcluster-role-binding.yaml #create a file of the binding
 kubectl api-resources --namespaced=false #check the resources for a node/cluster
+#NETWORK POLICIES
+#file example:network-policy.yaml
+kubectl get netpol #netpol is networkPolicy abr.
+        get netpol -l name=POLICY #filter pods with the same label
+        describe netpol NETWORK_POLICY
 
 #--- STORAGE
 File System:
@@ -284,16 +289,62 @@ docker run -v DATA_VOLUME:/var/lib/mysql mysql #an example to attach the new vol
 docker run -v /path/to/VOLUME:/var/lib/mysql mysql #this create a "binding" mount. OLD WAY
 docker run --mount type=bind,source=/data/mysql,target=/var/lib/mysql IMAGE #this is the new way to mount it
 
+#PERSISTENT VOLUME
+#Example file: persistent-volume-definition.yaml, persistent-volume-claim-definition.yaml
+kubectl create -f PV-FILE
+        get persistentvolume
+        get persistentvolumeclaim
+        delete persistentvolumeclaim CLAIM_VOLUME #deletes the claim
 #CREATE A PERSISTENT VOLUME STEPS
 1- copy pod configuration : kubectl get pod POD -O yaml > name.yaml
 2- add the "volumeMounts" section #pod-definition-volumes.yaml example
 3- add the "volumes" section #pod-definition-volumes.yaml example
 4- if required, delete the old pod and create the new one: kubectl create -f FILE
 
-
-
 #--- NETWORK
 cat /etc/cni/net.d/*.conf #here we can find the IP address management
 ps aux | grep kube-api-server #check the range of the service ip cluster default
 kubectl -n kube-system logs NETWORK_POD #check the logs for the CNI pod
 kubectl -n kube-system logs KUBE-PROXY #check what type of proxy is configured
+#INGRESS
+#files: ingress-controller-deployment | configMap | service.yaml for the INGRESS controller
+#files: ingress-simplepath.yaml or ingress-multipath.yaml depending on the rules that want to be implmented
+#to create it you have to deploy an INGRESS CONTROLLER (NGINX, HAPROXY, TRAEFIK) and configure INGRESS RESOURCES
+kubectl get ingress
+
+#--- TROUBLESHOOTING NOTES
+#LINKS:
+https://learnk8s.io/troubleshooting-deployments
+https://grapeup.com/blog/common-kubernetes-failures-at-scale/
+https://www.itprotoday.com/hybrid-cloud/8-problems-kubernetes-architecture
+# With Pods, start for drawing the schema if you know it: DB-pod -> DB-service -> WEB-pod -> WEB-service
+#Check the logs of the pod with "kubectl logs POD" then if it is "restarting" check the live log with the option "-f"
+#You can even check the logs of the previous pod with option "--previous"
+
+#If the Control Plane components are deployed as pods (kube-apiserver, control-manager, kube-schduler) check the pods
+#with "kubectl get pods -n kube-systemctl". In case the controlplane are deployed as services check the service status
+#of them in the master, example: 
+service kube-apiserver status
+        control-manager status
+        kube-scheduler status
+#and the kubelet and kube-proxy in the worker nodes:
+service kubelet status
+        kube-proxy status
+#then check the logs:
+kubectl logs POD-master -n kube-system
+sudo journalctl -u kube-apiserver #in case it is a service host logging solution
+
+#For node just use the describe option, to keep in mind the status:
+#FALSE
+#TRUE
+#UNKNOWN > possible lost connection between worker and master
+#and dont forget to check the certificates:
+openssl x509 -in /path/to/certificate.crt -text #to check the expiration time
+
+#TSHOOT NODES - STATICPOD ISSUE
+#find the configuration file, first ls inside the folder then find the kubeadm config file
+ls /etc/systemd/system/kubelet.service.d/
+cat /etc/systemd/system/kubelet.service.d/FILE
+#you will find the path in the --config=/path/to/configfile. now grep the search
+grep -i staticPodPath /pat/to/configfile.yaml
+#move to the folder and fix the error, the pods will restart after a configuration change.

@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-example-paths
+spec:
+  rules:
+  #here starts the pattern if you want to create rules.
+  - host: host1.myexample.com #this can be added depending if you want to do it via DNS
+    http:
+      paths:
+      - path: /web-path-1
+        #this is the same as from the ingress-simplepath.yaml file copied from spec.backend, and as an array it can have multiple paths
+        backend:
+          serviceName: example-service
+          servicePort: 80
