@@ -348,3 +348,28 @@ cat /etc/systemd/system/kubelet.service.d/FILE
 #you will find the path in the --config=/path/to/configfile. now grep the search
 grep -i staticPodPath /pat/to/configfile.yaml
 #move to the folder and fix the error, the pods will restart after a configuration change.
+
+#TROUBLESHOOTING - LOOKING AT LOGS
+Master 
+/var/log/kube-apiserver.log - API Server, responsible for serving the API
+/var/log/kube-scheduler.log - Scheduler, responsible for making scheduling decisions
+/var/log/kube-controller-manager.log - Controller that manages replication controllers
+
+Worker Nodes
+/var/log/kubelet.log - Kubelet, responsible for running containers on the node
+/var/log/kube-proxy.log - Kube Proxy, responsible for service load balancing
+On workers, SSH into them and check the systemctl:
+systemctl status kubelet/kube-proxy
+
+take this path in consideration: "/etc/systemd/system/kubelet.service.d/" you should find there the kubeadm config.
+take a look on the "--config=PATH" and check in that yaml config file the configuration (example, wrong CA.crt path)
+#TSHOOT NOTES APART - EASY AND CONCISE
+Connecting deployment and service:
+The Service spec.selector should match at least one Pod template.metadata.labels.name
+The Service spec.ports.port.targetPort should match the spec.containers.ports.containerPort of the Pod.
+The Service port can be any number. Multiple Services can use the same port because they have different IP addresses assigned.
+
+Connecting Service and Ingress:
+Two things should match in the Ingress and Service:
+The spec././.service.port of the Ingress should match the spec.ports.port of the Service
+The spec././.service.name of the Ingress should match the metadata.name of the Service
