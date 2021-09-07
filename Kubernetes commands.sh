@@ -1,9 +1,33 @@
-Pods > ReplicaSets > Deployment > Namespaces #Layers of abstraction
+#- QUICK SHOT TO LABS AND MEMO
+alias k='kubectl'
+source <(kubectl completion bash)
+complete -F __start_kubectl k
+export do="--dry-run=client -o yaml" 
+
+github > kubernetes/website/master/content/en/examples
+k run NAME --image=IMAGE --dry-run=client -o yaml
+
+To make vim use 2 spaces for a tab edit ~/.vimrc to contain:
+set tabstop=2
+set expandtab
+set shiftwidth=2
+
 <Service>.<Namespace>.svc.cluster.local
 
 kubectl run #CLI
 kubectl apply #YAML/JSON
 kubectl create #CLI & YAML/JSON
+
+#-KUBERNETES ALIASES
+alias k='kubectl'
+alias kn='kubectl get nodes -o wide'
+alias kp='kubectl get pods -o wide'
+alias kd='kubectl get deployment -o wide'
+alias ks='kubectl get svc -o wide'
+alias kdp='kubectl describe pod'
+alias kdd='kubectl describe deployment'
+alias kds='kubectl describe service'
+alias kdn='kubectl describe node'
 
 #-BASICS
 kubectl run NAME_POD --image=IMAGE #Start a single pod of IMAGE
@@ -312,64 +336,3 @@ kubectl -n kube-system logs KUBE-PROXY #check what type of proxy is configured
 #to create it you have to deploy an INGRESS CONTROLLER (NGINX, HAPROXY, TRAEFIK) and configure INGRESS RESOURCES
 kubectl get ingress
 
-#--- TROUBLESHOOTING NOTES
-#LINKS:
-https://learnk8s.io/troubleshooting-deployments
-https://grapeup.com/blog/common-kubernetes-failures-at-scale/
-https://www.itprotoday.com/hybrid-cloud/8-problems-kubernetes-architecture
-# With Pods, start for drawing the schema if you know it: DB-pod -> DB-service -> WEB-pod -> WEB-service
-#Check the logs of the pod with "kubectl logs POD" then if it is "restarting" check the live log with the option "-f"
-#You can even check the logs of the previous pod with option "--previous"
-
-#If the Control Plane components are deployed as pods (kube-apiserver, control-manager, kube-schduler) check the pods
-#with "kubectl get pods -n kube-systemctl". In case the controlplane are deployed as services check the service status
-#of them in the master, example: 
-service kube-apiserver status
-        control-manager status
-        kube-scheduler status
-#and the kubelet and kube-proxy in the worker nodes:
-service kubelet status
-        kube-proxy status
-#then check the logs:
-kubectl logs POD-master -n kube-system
-sudo journalctl -u kube-apiserver #in case it is a service host logging solution
-
-#For node just use the describe option, to keep in mind the status:
-#FALSE
-#TRUE
-#UNKNOWN > possible lost connection between worker and master
-#and dont forget to check the certificates:
-openssl x509 -in /path/to/certificate.crt -text #to check the expiration time
-
-#TSHOOT NODES - STATICPOD ISSUE
-#find the configuration file, first ls inside the folder then find the kubeadm config file
-ls /etc/systemd/system/kubelet.service.d/
-cat /etc/systemd/system/kubelet.service.d/FILE
-#you will find the path in the --config=/path/to/configfile. now grep the search
-grep -i staticPodPath /pat/to/configfile.yaml
-#move to the folder and fix the error, the pods will restart after a configuration change.
-
-#TROUBLESHOOTING - LOOKING AT LOGS
-Master 
-/var/log/kube-apiserver.log - API Server, responsible for serving the API
-/var/log/kube-scheduler.log - Scheduler, responsible for making scheduling decisions
-/var/log/kube-controller-manager.log - Controller that manages replication controllers
-
-Worker Nodes
-/var/log/kubelet.log - Kubelet, responsible for running containers on the node
-/var/log/kube-proxy.log - Kube Proxy, responsible for service load balancing
-On workers, SSH into them and check the systemctl:
-systemctl status kubelet/kube-proxy
-
-take this path in consideration: "/etc/systemd/system/kubelet.service.d/" you should find there the kubeadm config.
-take a look on the "--config=PATH" and check in that yaml config file the configuration (example, wrong CA.crt path)
-#TSHOOT NOTES APART - EASY AND CONCISE
-Connecting deployment and service:
-The Service spec.selector should match at least one Pod template.metadata.labels.name
-The Service spec.ports.port.targetPort should match the spec.containers.ports.containerPort of the Pod.
-The Service port can be any number. Multiple Services can use the same port because they have different IP addresses assigned.
-
-Connecting Service and Ingress:
-Two things should match in the Ingress and Service:
-The spec././.service.port of the Ingress should match the spec.ports.port of the Service
-The spec././.service.name of the Ingress should match the metadata.name of the Service

@@ -16,35 +16,9 @@ https://learnk8s.io/troubleshooting-deployments
 https://github.com/kodekloudhub/certified-kubernetes-administrator-course
 
 ~
-#- KUBERNETES INFO
-#- WHAT IS IT?
-it is a container management technology developed by GOOGLE (later made open source in 2015) 
-to manage contai­nerized applic­ati­on(­orc­hes­tra­tion).
+https://codefresh.io/kubernetes-tutorial/kubernetes-antipatterns-1/
 
-#- WHY?
-1.Service discovery and load balancing 1.Service discovery and load balancing
-2.Auto­mated rollbacks
-3.Self­-he­aling
-4.Auto Scaling
-5.Canary updates and Rolling updates
-6.Open source & Community driven
-7.High Availa­bility
-
-#- CONCEPTS
-Node -> machine in the cluster
-Docker -> helps in creation of containers that includes apps and its binaries.
-Pods -> A Pod is the basic building block of Kubern­­et­e­s–the smallest and simplest unit in the Kubernetes object model that you create or deploy,is also a group of containers (1 or more).Only containers of same pod can share shared storage.
-Service -> is an abstra­­ction which defines a logical set of Pods and a policy by which to access them.
-Jobs -> Creates pod(s) and ensures that a specified number succes­­sfully comple­ted.When a specified number of successful run of pods is completed, then the job is considered complete.
-Cronjob -> job scheduler in K8s
-Repli­­casets -> ensures how many replica of pod should be running.
-Names­­paces -> Logical seperation between teams and thier enviro­nme­nts.It allows various teams(­Dev­,Prod) to share k8s cluster by providing isolated workspace.
-Deployment -> Desired state of pods for declar­­ative updates
-Daemonset -> Ensures a particular pod to be run on some or all nodes
-Persis­­te­n­t­volume -> Persistent storage in the cluster with an indepe­­ndent lifecycle.
-persis­­te­n­t­vo­­lum­­eclaim -> Request for storage (for a Persi­­ste­­nt­V­o­lume) by a user
-ingress -> is a collection of rules that allow inbound connec­­tions to reach the cluster services.
-
+~
 https://blog.pipetail.io/posts/2020-05-04-most-common-mistakes-k8s/
 - resources - requests and limits -> OOMkill
 - liveness and readiness probes
