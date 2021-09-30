@@ -1,17 +1,3 @@
-#- QUICK SHOT TO LABS AND MEMO
-alias k='kubectl'
-source <(kubectl completion bash)
-complete -F __start_kubectl k
-export do="--dry-run=client -o yaml" 
-
-github > kubernetes/website/master/content/en/examples
-k run NAME --image=IMAGE --dry-run=client -o yaml
-
-To make vim use 2 spaces for a tab edit ~/.vimrc to contain:
-set tabstop=2
-set expandtab
-set shiftwidth=2
-
 <Service>.<Namespace>.svc.cluster.local
 
 kubectl run #CLI
@@ -336,3 +322,10 @@ kubectl -n kube-system logs KUBE-PROXY #check what type of proxy is configured
 #to create it you have to deploy an INGRESS CONTROLLER (NGINX, HAPROXY, TRAEFIK) and configure INGRESS RESOURCES
 kubectl get ingress
 
+#--- EXTERNAL API SERVER ACCESS
+1- you have to expose the cluster changing the service to NodePort (k edit svc kubernetes)
+2- k config view --raw #and copy all the data to a file "vim FILE"
+3- check the apiserver.crt #cat /etc/kubernetes/pki/apiserver.crt
+4- add an entry to /etc/hosts with the IP addres of the command "k --kubeconfig FILE https://10.10.10.10:8888" with the DNS "kubernetes"
+5- then change the IP of the FILE server entry with "kubernetes:8888"
+6- test now with the command "k --kubeconfig FILE get pods/svc/deploy..."
