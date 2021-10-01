@@ -1,8 +1,8 @@
 <Service>.<Namespace>.svc.cluster.local
 
-kubectl run #CLI
-kubectl apply #YAML/JSON
-kubectl create #CLI & YAML/JSON
+#IMPORTANT PATHS PATHS
+/etc/kubernetes/manifests/
+/etc/kubernetes/pki
 
 #-KUBERNETES ALIASES
 alias k='kubectl'
@@ -15,86 +15,26 @@ alias kdd='kubectl describe deployment'
 alias kds='kubectl describe service'
 alias kdn='kubectl describe node'
 
-#-BASICS
-kubectl run NAME_POD --image=IMAGE #Start a single pod of IMAGE
-                                    --port=XXXX #Expose port XXXX
-                                    --replicas=X #Start a replicated pod                                 
-kubectl delete pod NAME_POD
 
 #-CONFIG-#
 KUBECONFIG=~/.kube/config:~/.kube/kubconfig2 #Use multiple kubeconfig files at the same time 
 kubectl config view #Show merged kubeconfig settings
-kubectl config view -o jsonpath='{.users[].name}'    # display the first user
-kubectl config view -o jsonpath='{.users[*].name}'   # get a list of users
 kubectl config get-contexts                          # display list of contexts 
 kubectl config current-context                       # display the current-context
 kubectl config use-context my-cluster-name           # set the default context to my-cluster-name
 
-#-MINIKUBE
-minikube start
-minikube stop
-minikube delete #in case you get "machine does not exist" to clear the minikube local state
-minikube start --driver=virtualbox #to start minikube in virtualbox
-minikube start --nodes X -p NAME_MULTINODE 
 
 #IMPORTANT COMMANDS
-kubectl get pod POD_NAME -o yaml >FILE.YAML #copy the configuration file. With this you can remove the old pod and update the configuration
-kubectl exec etcd-master -n kube-system etcdctl get --prefix -keys-only #to list all keys stored by kubernetes
+k exec etcd-master -n kube-system etcdctl get --prefix -keys-only #to list all keys stored by kubernetes
+k exec POD -it -- bash #execute bash in the pod
+kubectl expose POD --port=80 --target-port=8000 #Create a service for a POD, which serves on port 80 and connects to the containers on port 8000
 ps -aux | grep kube-apiserver #view api-server options
-cat /etc/kubernetes/manifests/kube-apiserver.yaml #view api-server options in kubeadm
 ps -aux | grep kube-controller-manager #view controller-manager options
 
 #DECLARATIVE WAY
 kubectl create -f CONFIG_FILE
 kubectl replace -f CONFIG_FILE
 kubectl apply -f CONFIG_FILE
-
-#NODES (NO in short)
-kubectl get no
-        get no -o wide
-        describe no
-        get no -o YAML
-        get node --selector=[LABEL_NAME]
-        top node NODE_NAME
-        label nodes NODE_NAME label-key=label-value #label a node
-
-#PODS (po)
-kubectl get po
-        get po -o wide
-        describe po
-        get po --show-labels
-        get po --selector env=ENVIRONMENT
-        get po -l app=APP_NAME
-        get po -o YAML
-        get pod POD_NAME -o YAML --export
-        get pod POD_NAME -o YAML --export > NAME_FILE.YAML
-        get pods --field-selector stats.phase=running
-        get pods --namespace=NAMESPACE #get pod from that namespace, you can also put "-n" and the namespace
-        get all --selector 
-
-#DEPLOYMENT (DEPLOY)
-kubectl get deploy
-        describe deploy
-        get deploy -o wide
-        get deploy -o YAML
-
-#NAMESPACES (NS)
-#To create a pod in a selected namespace you hae to add this: metadata.namespace to the pod-definition file
-#Example of namespace creation: namespace-definition.yaml
-kubectl get ns
-        get ns -o YAML
-        describe ns
-        config set-context $(kubectl config current-context) --namespace=NAMESPACE_NAME #switch the namespace workaround
-        create -f namespace-definition.yaml #I use a file that I created as example. Very used command
-        get pods --all-namespaces #check all the pods in all namespaces
-
-#SERVICES (SVC)
-kubectl get svc
-        describe svc
-        get svc -o wide
-                -o YAML
-                --show-labels
-        create -f svc-definition.yaml #to create the configuration based on the file.
         
 
 #--SCHEDULER--#
@@ -105,10 +45,10 @@ kubectl get svc
 #-LABELS AND SELECTORS
 #example in kubernetes_replicaset_definition.yaml and service-definition.yaml
 #are used in the replicaset-definition or service-definition as it has to go over the pod definition to match the label of the pods
-#types of NodeAffinity
-        #requiredDuringSchedulingIgnoredDuringExecution > must/hard 
-        #preferredDuringSchedulingIgnoredDuringExecution > soft/light
-        #requiredDuringSchedulingRequiredDuringExecution > hardest, will stop all pods that not have the affinity reqs.
+types of NodeAffinity
+        requiredDuringSchedulingIgnoredDuringExecution > must/hard 
+        preferredDuringSchedulingIgnoredDuringExecution > soft/light
+        requiredDuringSchedulingRequiredDuringExecution > hardest, will stop all pods that not have the affinity reqs.
 
 #- TAINTS AND TOLERATIONS
 #example in pod_definition.yaml
@@ -121,14 +61,6 @@ kubectl describe nodes NODE_NAME | grep -i Taints #to check the status of taint
 #- LABEL NODES
 #example in pd-labels-and-selectors.yaml; spec.nodeSelector
 kubectl label nodes NODE_NAME key=value
-
-#- DAEMON SETS
-kubectl get daemonsets
-        describe daemonsets DAEMON_NAME
-
-#- MULTIPLE SCHEDULERS
-kubectl get events
-        logs SCHEDULER_NAME --name-space=NAMESPACE_NAME #to check the logs
 
 #--LOGGING AND MONITORING--#
 kubectl top node
@@ -152,14 +84,6 @@ kubecnt get configmaps
         describe secrects
         create configmap CONFIG_NAME --from-literal=KEY=VALUE
         create secret generic SECRET_NAME --from-literal=KEY=VALUE
-
-#- SECRETS
-#example in pod_definition.yaml and the secret file; secrets_definition.yaml
-kubectl create secret generic SECRET_NAME --from-literal=KEY=VALUE #imperative way of create a secret
-        create -f 
-        get secrets
-        get secrets APP_NAME -o yaml #to check the secrets enconded
-        describe secrets 
 
 #ROLLOUT
 2 way of doing it:
@@ -215,19 +139,13 @@ kubectl get nodes
 kubectl get all --all-namespaces -o yaml > ALL-DEPLOY-SERVICES.yaml #backup of the configuration
 ETCDCTL_APY=3 etcdctl snapshot save NAME.db #backup of a ETCD database
 ETCDCTL_APY=3 etcdctl snapshot status NAME.db #check the status of the ETCD backup
-#to restore the ETCD db
-1- service kube-apiserver stop #stop the kube-apiserver service
-2- ETCDCTL_APY=3 etcdctl snapshot restore NAME.db --data-dir /PATH/TO/BACKUP #restore the backup
-3- point in the etcd.service the path /PATH/TO/BACKUP #when ETCD restores from a backup it initialize a new cluster
-                                                      #configuration and configures the members of ETCD as new membeers 
-                                                      #to new cluster. this is to prevent a new member to joining an 
-                                                      #existing cluster. 
-                                                      #Runing this command a new path is created pointing to the /PATH.
-                                                      #add the new path to the etcd.service
-                                                      #PATH of etcd.service = /etc/kubernetes/manifests/etcd.yaml
-4- systemctl daemon-reload
-5- service etcd restart
-6- service kube-apiserver start
+ETCDCTL_API=3 etcdctl version
+#then go where all the manifests (or static pods) are stored:
+cd /etc/kubernetes/manifests/
+cat etcd.yaml and get all this parameters > --endpoints, --cacert, --cert, --key
+ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapshot save /opt/etcd-backup.db
+#to verify the backup:
+ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapsh
 
 #--- SECURITY --
 #NOTES
@@ -263,69 +181,11 @@ All the Client Certificates for clients have to have a copy of the public certif
 1- create an openssl.cnf (config file) #created as an example in this github
 2- openssl req -new -key apiserver.key -subj "/CN=kube-apiserver" -out apiserver.csr -config openssl.cnf
 3- openssl x509 -req -in apiserver.csr -CA ca.crt -CAkey ca.key -out apiserver.crt
-#COMMANDS
-#without setup a context it will get th default one found in $HOME/.kube/config
-kubectl config use-context USER@CLUSTER #change the context of the user
-curl http://localhost:6443 -k #check the list of available API groups
-curl http://localhost:6443/apis -k | grep "name" #it will return all the supported groups
-#RBAC
-kubectl create -f createuser-rol-binding.yaml #create a file of the binding
-kubectl get roles #get a list of the roles
-kubectl describe role ROLE #get a description of the role
-kubectl describe rolebinding ROLEBINDING
-kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... #check access
-kubectl auth can-i CREATE/DELETE/... DEPLOYMENT/NODES/PODS/... --as USER #to impersonate and check users access
-kubectl create -f createcluster-role-binding.yaml #create a file of the binding
-kubectl api-resources --namespaced=false #check the resources for a node/cluster
-#NETWORK POLICIES
-#file example:network-policy.yaml
-kubectl get netpol #netpol is networkPolicy abr.
-        get netpol -l name=POLICY #filter pods with the same label
-        describe netpol NETWORK_POLICY
-
-#--- STORAGE
-File System:
-/var/lib/docker/aufs
-                containers
-                image
-                volumes
-                
-#Storage Drivers: AUFS | ZFS | BTRFS | DEVICE MAPPER | OVERLAY
-#Volume Drivers: local | AZURE FILE STORAGE | CONVOY | FLOCKER | GCE-DOCKER | GLUSTER-FS | NETAPP |REXRAY | VMWARE VSPHERE STORAGE
-
-docker volume create DATA_VOLUME #this will create a persisten folder in /var/lib/docker/volumes called DATA_VOLUME 
-docker run -v DATA_VOLUME:/var/lib/mysql mysql #an example to attach the new volume. you even can skip the creatin phase and create
-                                               #it with this command. This is a "Volume" mount. OLD WAY
-docker run -v /path/to/VOLUME:/var/lib/mysql mysql #this create a "binding" mount. OLD WAY
-docker run --mount type=bind,source=/data/mysql,target=/var/lib/mysql IMAGE #this is the new way to mount it
-
-#PERSISTENT VOLUME
-#Example file: persistent-volume-definition.yaml, persistent-volume-claim-definition.yaml
-kubectl create -f PV-FILE
-        get persistentvolume
-        get persistentvolumeclaim
-        delete persistentvolumeclaim CLAIM_VOLUME #deletes the claim
-#CREATE A PERSISTENT VOLUME STEPS
-1- copy pod configuration : kubectl get pod POD -O yaml > name.yaml
-2- add the "volumeMounts" section #pod-definition-volumes.yaml example
-3- add the "volumes" section #pod-definition-volumes.yaml example
-4- if required, delete the old pod and create the new one: kubectl create -f FILE
-
-#--- NETWORK
-cat /etc/cni/net.d/*.conf #here we can find the IP address management
-ps aux | grep kube-api-server #check the range of the service ip cluster default
-kubectl -n kube-system logs NETWORK_POD #check the logs for the CNI pod
-kubectl -n kube-system logs KUBE-PROXY #check what type of proxy is configured
-#INGRESS
-#files: ingress-controller-deployment | configMap | service.yaml for the INGRESS controller
-#files: ingress-simplepath.yaml or ingress-multipath.yaml depending on the rules that want to be implmented
-#to create it you have to deploy an INGRESS CONTROLLER (NGINX, HAPROXY, TRAEFIK) and configure INGRESS RESOURCES
-kubectl get ingress
 
 #--- EXTERNAL API SERVER ACCESS
-1- you have to expose the cluster changing the service to NodePort (k edit svc kubernetes)
+1- you have to expose the cluster changing the service to NodePort (k edit svc kubernetes) and get the svc PORT exposed
 2- k config view --raw #and copy all the data to a file "vim FILE"
 3- check the apiserver.crt #cat /etc/kubernetes/pki/apiserver.crt
-4- add an entry to /etc/hosts with the IP addres of the command "k --kubeconfig FILE https://10.10.10.10:8888" with the DNS "kubernetes"
-5- then change the IP of the FILE server entry with "kubernetes:8888"
+4- add an entry to /etc/hosts with the IP addres of the command "k --kubeconfig FILE https://10.10.10.10:PORT" and the name "kubernetes"
+5- then change the IP of the FILE "server" entry with "kubernetes:PORT"
 6- test now with the command "k --kubeconfig FILE get pods/svc/deploy..."
