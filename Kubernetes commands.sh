@@ -2,7 +2,14 @@
 
 #IMPORTANT PATHS PATHS
 /etc/kubernetes/manifests/
-/etc/kubernetes/pki
+/etc/kubernetes/pki/
+/etc/falco/ #falco folder
+/var/log/containers/ #logs of the containers
+/var/log/pods/ #logs of the pods
+#> Kubelet paths
+/etc/kubernetes/kubelet.conf #KubeConfig file with the unique kubelet identity
+/var/lib/kubelet/config.yaml #The file containing the kubelet's ComponentConfig
+/etc/systemd/system/kubelet.service.d/10-kubeadm.conf #file used by systemd
 
 #-KUBERNETES ALIASES
 alias k='kubectl'
@@ -18,11 +25,16 @@ alias kdn='kubectl describe node'
 
 #-CONFIG-#
 KUBECONFIG=~/.kube/config:~/.kube/kubconfig2 #Use multiple kubeconfig files at the same time 
-kubectl config view #Show merged kubeconfig settings
-kubectl config get-contexts                          # display list of contexts 
-kubectl config current-context                       # display the current-context
-kubectl config use-context my-cluster-name           # set the default context to my-cluster-name
+k config view #Show merged kubeconfig settings
+k config get-contexts                          # display list of contexts 
+k config current-context                       # display the current-context
+k config use-context my-cluster-name           # set the default context to my-cluster-name
+k config get-contexts -o name                  # display the names of the contexts
+k config view -o jsonpath="{.contexts[*].name}" | tr " " "\n" #MORE COMPLICATED BUT VALID
 
+#EXTRACT THE CERTIFICATE OF A USER
+k config view --raw # manual way
+k config view --raw -ojsonpath="{.users[?(.name == 'NAME')].user.client-certificate-data}" | base64 -d # complicated way
 
 #IMPORTANT COMMANDS
 k exec etcd-master -n kube-system etcdctl get --prefix -keys-only #to list all keys stored by kubernetes
@@ -31,11 +43,14 @@ kubectl expose POD --port=80 --target-port=8000 #Create a service for a POD, whi
 ps -aux | grep kube-apiserver #view api-server options
 ps -aux | grep kube-controller-manager #view controller-manager options
 
-#DECLARATIVE WAY
-kubectl create -f CONFIG_FILE
-kubectl replace -f CONFIG_FILE
-kubectl apply -f CONFIG_FILE
-        
+#CRICTL
+Normally used to find processes for tasks like finding malicious syscalls
+#1- finding POD ID
+crictl ps -id CONTAINER_ID #this CONRAINER_ID normally is  provided or get it via greping logs with FALCO
+#2- find the CONTAINER ID of the pod
+crictl pod -id  POD_ID #obtained with the command before. with this we see what is the name of the pod and namespace
+#3- find the process. This is for the syscall mainly
+crictl inspect CONTAINER_ID | grep args -A1
 
 #--SCHEDULER--#
 #example in 
@@ -76,15 +91,6 @@ kubectl describe deployment DEPLOYMENT_NAME #check how the changes were done
 #you can update the image with "kubectl set image DEPLOYMENT_NAME IMAGE=IMAGE_VER" but this will not update the 
 #deployment file.
 
-#- VARIABLES, CONFIGMAPS, SECRETS -> IN IMPERATIVE WAY
-#files for reference: pd-variables, pd-secrets, pd-configMap
-kubecnt get configmaps
-        get secrets
-        describe configmap
-        describe secrects
-        create configmap CONFIG_NAME --from-literal=KEY=VALUE
-        create secret generic SECRET_NAME --from-literal=KEY=VALUE
-
 #ROLLOUT
 2 way of doing it:
         1- Recreate #this will cause an APP downtime as all the pods get removed and new ones recreated.
@@ -104,6 +110,8 @@ kubectl drain NODE_NAME #workloads are moved to other nodes and node as marked a
 #controller-manager and kube-scheduler can be 1 version lower
 
 #---CLUSTER UPGRADE PROCESS
+#drain the node, this means prepare it for maintenance by marking it unscheduable
+kubectl drain NODE_NAME --ignore-daemonsets
 #first in control plane node
 kubeadm version #check the version
 kubeadm upgrade plan #check the planned version
@@ -111,8 +119,6 @@ kubeadm upgrade apply VERSION
 #(If you have) For the other control plane nodes do the same as the control plane node but using:
 kubeadm upgrade NODE_NAME
 kubeadm upgrade apply.
-#drain the node, this means prepare it for maintenance by marking it unscheduable
-kubectl drain NODE_NAME --ignore-daemonsets
 #upgrade the kubelet and kubectl
 apt-get update && \
     apt-get install -y --allow-change-held-packages kubelet=VERSION kubectl=VERSION
@@ -140,12 +146,6 @@ kubectl get all --all-namespaces -o yaml > ALL-DEPLOY-SERVICES.yaml #backup of t
 ETCDCTL_APY=3 etcdctl snapshot save NAME.db #backup of a ETCD database
 ETCDCTL_APY=3 etcdctl snapshot status NAME.db #check the status of the ETCD backup
 ETCDCTL_API=3 etcdctl version
-#then go where all the manifests (or static pods) are stored:
-cd /etc/kubernetes/manifests/
-cat etcd.yaml and get all this parameters > --endpoints, --cacert, --cert, --key
-ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapshot save /opt/etcd-backup.db
-#to verify the backup:
-ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapsh
 
 #--- SECURITY --
 #NOTES
@@ -165,8 +165,8 @@ etcd-server
 api-server
 kubelet
 #CREATE A SELF-SIGNED CA CERTIFICATE
-1- openssl genrsa -out ca.key 2048 #create a private key
-2- openssl req -new -key ca.key -subj "/CN=KUBERNETES-CA" -out ca.csr #to create a certificate signing request (cert with all details but no signature)
+1- openssl genrsa -out alex.key 2048 #create a private key
+2- openssl req -new -key alex.key -out ca.csr #to create a certificate signing request (In "Common Name" we have to specify the name, in ths case alex)
 3- openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt #sign the certificate create in last step, in this case, selfsigned
 The steps done here create a CA for Kubernetes Cluster, then we have to repeat steps 1 and 2 for the admin Certificate
 but instead of CN=KUBERNETES-CA we create a selfsigned kube-admin ("/CN=kube-admin"). then we sign it with the CA key pair;
@@ -189,3 +189,24 @@ All the Client Certificates for clients have to have a copy of the public certif
 4- add an entry to /etc/hosts with the IP addres of the command "k --kubeconfig FILE https://10.10.10.10:PORT" and the name "kubernetes"
 5- then change the IP of the FILE "server" entry with "kubernetes:PORT"
 6- test now with the command "k --kubeconfig FILE get pods/svc/deploy..."
+
+#COMMANDS TO FILTER
+#check log files (for example for a misconfigured api server)
+cd /var/log/pods
+tail -f NAME_LOG
+#ETCD quick command
+cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep etcd
+#CREATE A CERT+KEY AND AUTH TO USER "ALEX"
+#they should provide you with both case, this is just in case, good to have it here.
+1- openssl genrsa -out alex.key 2048 #create a private key
+2- openssl req -new -key alex.key -out alex.csr #to create a certificate signing request (In "Common Name" we have to specify the name, in ths case alex)
+3- go to https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/#create-certificatesigningrequest
+        - request is the base64 encoded value of the CSR file content. You can get the content using this command: cat myuser.csr | base64 | tr -d "\n"
+4- k create -f csr.yaml #create the csr
+5- k get csr #check if it is created
+6- k certificate approve NAME #approve it
+7- k create role NAME_ROLE --resource=RESOURCE --verb=create,list,get,update,delete --namespace=NS #create a role
+8- k create rolebinding NAME_RB --role=NAME_ROLE --user=USER --namespace=NS #create a role binding
+-verify that its created
+k -n NS describe rolebindings NAME_RB
+k auth can-i update pods --namespace=NS --as=USER

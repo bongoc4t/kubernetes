@@ -11,10 +11,9 @@ alias kdn='kubectl describe node'
 source <(kubectl completion bash)
 complete -F __start_kubectl k
 export do="--dry-run=client -o yaml" 
+export now="--force --grace-period 0" #fast pod delete
 
-github > kubernetes/website/master/content/en/examples
-k run NAME --image=IMAGE --dry-run=client -o yaml
-
+#- VIM
 To make vim use 2 spaces for a tab edit ~/.vimrc to contain:
 set tabstop=2
 set expandtab
