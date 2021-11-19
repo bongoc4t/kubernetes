@@ -1,4 +1,11 @@
 <Service>.<Namespace>.svc.cluster.local
+#TSHOOT COMMANDS
+kubectl get pod -A POD
+kubectl get pod -o wide POD
+kubectl describe pod POD
+Kubectl logs -p POD #logs of previos pods in case of restart/reset
+kubectl get events
+
 
 #IMPORTANT PATHS PATHS
 /etc/kubernetes/manifests/
@@ -6,10 +13,13 @@
 /etc/falco/ #falco folder
 /var/log/containers/ #logs of the containers
 /var/log/pods/ #logs of the pods
+
+
 #> Kubelet paths
 /etc/kubernetes/kubelet.conf #KubeConfig file with the unique kubelet identity
 /var/lib/kubelet/config.yaml #The file containing the kubelet's ComponentConfig
 /etc/systemd/system/kubelet.service.d/10-kubeadm.conf #file used by systemd
+
 
 #-KUBERNETES ALIASES
 alias k='kubectl'
@@ -21,16 +31,24 @@ alias kdp='kubectl describe pod'
 alias kdd='kubectl describe deployment'
 alias kds='kubectl describe service'
 alias kdn='kubectl describe node'
+export do="--dry-run=client -o yaml" 
+export now="--force --grace-period 0" #fast pod delete
+complete -F __start_kubectl k
 
+
+#- VIM
+To make vim use 2 spaces for a tab edit ~/.vimrc to contain:
+set tabstop=2
+set expandtab
+set shiftwidth=2
 
 #-CONFIG-#
 KUBECONFIG=~/.kube/config:~/.kube/kubconfig2 #Use multiple kubeconfig files at the same time 
-k config view #Show merged kubeconfig settings
 k config get-contexts                          # display list of contexts 
 k config current-context                       # display the current-context
 k config use-context my-cluster-name           # set the default context to my-cluster-name
 k config get-contexts -o name                  # display the names of the contexts
-k config view -o jsonpath="{.contexts[*].name}" | tr " " "\n" #MORE COMPLICATED BUT VALID
+
 
 #EXTRACT THE CERTIFICATE OF A USER
 k config view --raw # manual way
@@ -52,18 +70,13 @@ crictl pod -id  POD_ID #obtained with the command before. with this we see what 
 #3- find the process. This is for the syscall mainly
 crictl inspect CONTAINER_ID | grep args -A1
 
-#--SCHEDULER--#
-#example in 
-#pod can be assigned to a fixed node to being deployed instead of doing it randomly
-#another way to do it is creating a Pod binding object -> Pod-bind-definition.yaml
-
 #-LABELS AND SELECTORS
 #example in kubernetes_replicaset_definition.yaml and service-definition.yaml
 #are used in the replicaset-definition or service-definition as it has to go over the pod definition to match the label of the pods
 types of NodeAffinity
         requiredDuringSchedulingIgnoredDuringExecution > must/hard 
         preferredDuringSchedulingIgnoredDuringExecution > soft/light
-        requiredDuringSchedulingRequiredDuringExecution > hardest, will stop all pods that not have the affinity reqs.
+        requiredDuringSchedulingRequiredDuringExecution > hardest
 
 #- TAINTS AND TOLERATIONS
 #example in pod_definition.yaml
@@ -85,19 +98,7 @@ kubectl top node
 kubctl rollout status deployment/DEPLOYMENT_NAME #remove all the replicas and then recreate it
 kubectl rollout history deployment/DEPLOYMENT_NAME
 kubectl describe deployment DEPLOYMENT_NAME #check how the changes were done
-#default strategy is "RollOut" but you can change it manually creating in deployment: spec.strategy.type
-#to make the updates of the image we have to change in the deployment file "spec.template.spec.containers.name"
-#then use "kubectl apply -f DEPLOYMENT_NAME.yaml".
-#you can update the image with "kubectl set image DEPLOYMENT_NAME IMAGE=IMAGE_VER" but this will not update the 
-#deployment file.
 
-#ROLLOUT
-2 way of doing it:
-        1- Recreate #this will cause an APP downtime as all the pods get removed and new ones recreated.
-        2- Rolling #this use the Blue/Green technique. 1 up, 1 down. It's the default 
-kubectl rollout status DEPLOYMENT #check the status of deployment
-                history DEPLOYMENT #check the history of deployment
-        set POD_NAME DEPLOYMENT IMAGE=IMAGE:VERSION #this is an alternative and not recomended as it creates another YAML file.
 
 #--CLUSTER MAINTENANCE--#
 #Pod-eviction-timeout: time to a pod to come back online after a node goes down. Default = 5 minutes
@@ -105,9 +106,6 @@ kubectl drain NODE_NAME #workloads are moved to other nodes and node as marked a
         uncordon NODE_NAME #make the node available again
         cordon NODE_NAME #make the node unabled to schedule new pods, but old ones will work till end cycle
 
-#VERSIONING
-#None of the components should be higher version that kube-apiserver
-#controller-manager and kube-scheduler can be 1 version lower
 
 #---CLUSTER UPGRADE PROCESS
 #drain the node, this means prepare it for maintenance by marking it unscheduable
@@ -141,29 +139,15 @@ kubectl uncordon NODE_NAME
 #finally verify it
 kubectl get nodes
 
+
 #BACKUP RESOURCE CONFIGS
 kubectl get all --all-namespaces -o yaml > ALL-DEPLOY-SERVICES.yaml #backup of the configuration
+cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep 'etcd'
 ETCDCTL_APY=3 etcdctl snapshot save NAME.db #backup of a ETCD database
 ETCDCTL_APY=3 etcdctl snapshot status NAME.db #check the status of the ETCD backup
 ETCDCTL_API=3 etcdctl version
 
-#--- SECURITY --
-#NOTES
-#Certificate Public Keys= *.crt *.pem
-#Private Key = *.key *-key.pem
-#location of the manifests: /etc/kubernetes/manifests/*.yaml
----Client certificates for clients:
-admin
-scheduler
-controller-manager
-kube-proxy
-apiserver-kubelet-client
-apiserver-etcd-client
-kubelet-client
----Server Certificates for servers:
-etcd-server
-api-server
-kubelet
+
 #CREATE A SELF-SIGNED CA CERTIFICATE
 1- openssl genrsa -out alex.key 2048 #create a private key
 2- openssl req -new -key alex.key -out ca.csr #to create a certificate signing request (In "Common Name" we have to specify the name, in ths case alex)
@@ -190,23 +174,3 @@ All the Client Certificates for clients have to have a copy of the public certif
 5- then change the IP of the FILE "server" entry with "kubernetes:PORT"
 6- test now with the command "k --kubeconfig FILE get pods/svc/deploy..."
 
-#COMMANDS TO FILTER
-#check log files (for example for a misconfigured api server)
-cd /var/log/pods
-tail -f NAME_LOG
-#ETCD quick command
-cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep etcd
-#CREATE A CERT+KEY AND AUTH TO USER "ALEX"
-#they should provide you with both case, this is just in case, good to have it here.
-1- openssl genrsa -out alex.key 2048 #create a private key
-2- openssl req -new -key alex.key -out alex.csr #to create a certificate signing request (In "Common Name" we have to specify the name, in ths case alex)
-3- go to https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/#create-certificatesigningrequest
-        - request is the base64 encoded value of the CSR file content. You can get the content using this command: cat myuser.csr | base64 | tr -d "\n"
-4- k create -f csr.yaml #create the csr
-5- k get csr #check if it is created
-6- k certificate approve NAME #approve it
-7- k create role NAME_ROLE --resource=RESOURCE --verb=create,list,get,update,delete --namespace=NS #create a role
-8- k create rolebinding NAME_RB --role=NAME_ROLE --user=USER --namespace=NS #create a role binding
--verify that its created
-k -n NS describe rolebindings NAME_RB
-k auth can-i update pods --namespace=NS --as=USER
