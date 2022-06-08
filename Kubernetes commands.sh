@@ -5,7 +5,13 @@ kubectl get pod -o wide POD
 kubectl describe pod POD
 Kubectl logs -p POD #logs of previos pods in case of restart/reset
 kubectl get events
-
+Container logs are automatically rotated daily and every time the log file reaches 10MB. 'kubectl logs' command only shows the log
+entries for the last rotation.
+Here are some tricks to take a look on logs;
+cd /var/log/pods
+cd /var/log/containers
+Kubectl logs -p POD #logs of previous pods in case of restart/reset
+kubectl logs MULTIPOD -c POD #to check the logs of one of the containers
 
 #IMPORTANT PATHS PATHS
 /etc/kubernetes/manifests/
