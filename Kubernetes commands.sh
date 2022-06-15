@@ -43,6 +43,12 @@ all information updated from nodes, PODs, Configs, Secrets, Accounts... is updat
 ps -aux | grep etcd
 
 #KUBELET 
+- you need always manually install kubelet on worker nodes
+- Is responsible for:
+    - register nodes
+    - create PODs
+    - Monitor the state of nodes & PODs
+
 #->PATHS
 /etc/kubernetes/kubelet.conf #KubeConfig file with the unique kubelet identity
 /var/lib/kubelet/config.yaml #The file containing the kubelet's ComponentConfig
@@ -50,10 +56,10 @@ ps -aux | grep etcd
 ps -aux | grep kubelet
 
 #KUBE-APISERVER
-Is responsible for:
-Autheticate users
-validate requests
-retrieve and update data from ETCD
+- Is responsible for:
+    - Autheticate users
+    - validate requests
+    - retrieve and update data from ETCD
 Communicate with Scheduler
 Communicate with kubelet
 #-> PATHS
@@ -62,12 +68,12 @@ Communicate with kubelet
 ps -aux | grep kube-apiserver
 
 #KUBE CONTROLLER MANAGER
-Is responsible for:
-Watch status
-Remediate status
-Mode monitor period = every 5s
-Node moniroe grace period = every 40s
-POD eviction timeout = 5min
+- Is responsible for:
+    - Watch status
+    - Remediate status
+    - Mode monitor period = every 5s
+    - Node moniroe grace period = every 40s
+    - POD eviction timeout = 5min
 #-> PATHS
 /etc/kubernetes/manifests/kube-controller-manager.yaml
 /etc/systemd/system/kube-controller-manager.service # run as a system service defined
