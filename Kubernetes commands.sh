@@ -1,33 +1,4 @@
-<Service>.<Namespace>.svc.cluster.local
-#TSHOOT COMMANDS
-kubectl get pod -A POD
-kubectl get pod -o wide POD
-kubectl describe pod POD
-Kubectl logs -p POD #logs of previos pods in case of restart/reset
-kubectl get events
-Container logs are automatically rotated daily and every time the log file reaches 10MB. 'kubectl logs' command only shows the log
-entries for the last rotation.
-Here are some tricks to take a look on logs;
-cd /var/log/pods
-cd /var/log/containers
-Kubectl logs -p POD #logs of previous pods in case of restart/reset
-kubectl logs MULTIPOD -c POD #to check the logs of one of the containers
-
-#IMPORTANT PATHS PATHS
-/etc/kubernetes/manifests/
-/etc/kubernetes/pki/
-/etc/falco/ #falco folder
-/var/log/containers/ #logs of the containers
-/var/log/pods/ #logs of the pods
-
-
-#> Kubelet paths
-/etc/kubernetes/kubelet.conf #KubeConfig file with the unique kubelet identity
-/var/lib/kubelet/config.yaml #The file containing the kubelet's ComponentConfig
-/etc/systemd/system/kubelet.service.d/10-kubeadm.conf #file used by systemd
-
-
-#-KUBERNETES ALIASES
+#-KUBERNETES ALIASES AND INITIAL CONFIGURATION
 alias k='kubectl'
 alias kn='kubectl get nodes -o wide'
 alias kp='kubectl get pods -o wide'
@@ -41,12 +12,71 @@ export do="--dry-run=client -o yaml"
 export now="--force --grace-period 0" #fast pod delete
 complete -F __start_kubectl k
 
-
 #- VIM
 To make vim use 2 spaces for a tab edit ~/.vimrc to contain:
 set tabstop=2
 set expandtab
 set shiftwidth=2
+
+<Service>.<Namespace>.svc.cluster.local
+#TSHOOT COMMANDS
+- Container logs are automatically rotated daily and every time the log file reaches 10MB. 'kubectl logs' command only shows the log entries for the last rotation.
+kubectl get pod -A POD
+kubectl get pod -o wide POD
+kubectl describe pod POD
+Kubectl logs -p POD #logs of previos pods in case of restart/reset
+kubectl logs MULTIPOD -c POD #to check the logs of one of the containers
+kubectl get events
+
+#IMPORTANT PATHS PATHS
+/etc/kubernetes/manifests/
+/etc/kubernetes/pki/
+/var/log/containers/ #logs of the containers
+/var/log/pods/ #logs of the pods
+
+#ETCD 
+all information updated from nodes, PODs, Configs, Secrets, Accounts... is updated in ETCD
+- export ETCDCTL_API=3 #to set the right version of API
+#->PATHS
+/etc/kubernetes/manifests/etcd.yaml #as static pod
+/etc/systemd/system/etcd.service # run as a system service defined
+ps -aux | grep etcd
+
+#KUBELET 
+#->PATHS
+/etc/kubernetes/kubelet.conf #KubeConfig file with the unique kubelet identity
+/var/lib/kubelet/config.yaml #The file containing the kubelet's ComponentConfig
+/etc/systemd/system/kubelet.service.d/10-kubeadm.conf #file used by systemd
+ps -aux | grep kubelet
+
+#KUBE-APISERVER
+Is responsible for:
+Autheticate users
+validate requests
+retrieve and update data from ETCD
+Communicate with Scheduler
+Communicate with kubelet
+#-> PATHS
+/etc/kubernetes/manifests/kube-apiserver.yaml
+/etc/systemd/system/kube-apiserver.service # run as a system service defined
+ps -aux | grep kube-apiserver
+
+#KUBE CONTROLLER MANAGER
+Is responsible for:
+Watch status
+Remediate status
+Mode monitor period = every 5s
+Node moniroe grace period = every 40s
+POD eviction timeout = 5min
+#-> PATHS
+/etc/kubernetes/manifests/kube-controller-manager.yaml
+/etc/systemd/system/kube-controller-manager.service # run as a system service defined
+ps -aux | grep kube-controller-manager
+
+#KUBE SCHEDULER
+decide which pod goes where.
+#-> PATHS
+/etc/kubernetes/manifests/kube-scheduler.yaml
 
 #-CONFIG-#
 KUBECONFIG=~/.kube/config:~/.kube/kubconfig2 #Use multiple kubeconfig files at the same time 
@@ -101,7 +131,7 @@ kubectl top node
         top pod
 
 #-- APPLICATION LIFECYCLE MANAGEMENT --#
-kubctl rollout status deployment/DEPLOYMENT_NAME #remove all the replicas and then recreate it
+kubectl rollout status deployment/DEPLOYMENT_NAME #remove all the replicas and then recreate it
 kubectl rollout history deployment/DEPLOYMENT_NAME
 kubectl describe deployment DEPLOYMENT_NAME #check how the changes were done
 
