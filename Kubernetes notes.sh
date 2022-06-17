@@ -12,27 +12,11 @@ export do="--dry-run=client -o yaml"
 export now="--force --grace-period 0" #fast pod delete
 complete -F __start_kubectl k
 
-#- VIM
+#- CONFIGURE VIM [THIS IS MORE FOR THE CERTIFICATE EXAM]
 To make vim use 2 spaces for a tab edit ~/.vimrc to contain:
 set tabstop=2
 set expandtab
 set shiftwidth=2
-
-<Service>.<Namespace>.svc.cluster.local
-#TSHOOT COMMANDS
-- Container logs are automatically rotated daily and every time the log file reaches 10MB. 'kubectl logs' command only shows the log entries for the last rotation.
-kubectl get pod -A POD
-kubectl get pod -o wide POD
-kubectl describe pod POD
-Kubectl logs -p POD #logs of previos pods in case of restart/reset
-kubectl logs MULTIPOD -c POD #to check the logs of one of the containers
-kubectl get events
-
-#IMPORTANT PATHS PATHS
-/etc/kubernetes/manifests/
-/etc/kubernetes/pki/
-/var/log/containers/ #logs of the containers
-/var/log/pods/ #logs of the pods
 
 #ETCD 
 all information updated from nodes, PODs, Configs, Secrets, Accounts... is updated in ETCD
@@ -48,7 +32,6 @@ ps -aux | grep etcd
     - register nodes
     - create PODs
     - Monitor the state of nodes & PODs
-
 #->PATHS
 /etc/kubernetes/kubelet.conf #KubeConfig file with the unique kubelet identity
 /var/lib/kubelet/config.yaml #The file containing the kubelet's ComponentConfig
@@ -84,13 +67,34 @@ decide which pod goes where.
 #-> PATHS
 /etc/kubernetes/manifests/kube-scheduler.yaml
 
+#KUBE PROXY
+Its a process that runs inside all nodes in the kubernetes cluster, its job is to look for new services, and once a new service is created then the rules are created on each node to forward the traffic to each pod. One way to do it is with IPTABLES rules
+- kube-proxy is deployed as a deamonset so in every node it will be always one kube-proxy
+
+#TSHOOT COMMANDS
+kubectl get pod -A POD
+kubectl get pod -o wide POD
+kubectl describe pod POD
+#-> LOGS
+- Container logs are automatically rotated daily and every time the log file reaches 10MB. 'kubectl logs' command only shows the log entries for the last rotation.
+Kubectl logs -p POD #logs of previos pods in case of restart/reset
+kubectl logs MULTIPOD -c POD #to check the logs of one of the containers
+
+#DNS
+<Service>.<Namespace>.svc.cluster.local
+
+#IMPORTANT PATHS PATHS
+/etc/kubernetes/manifests/
+/etc/kubernetes/pki/
+/var/log/containers/ #logs of the containers
+/var/log/pods/ #logs of the pods
+
 #-CONFIG-#
 KUBECONFIG=~/.kube/config:~/.kube/kubconfig2 #Use multiple kubeconfig files at the same time 
 k config get-contexts                          # display list of contexts 
 k config current-context                       # display the current-context
 k config use-context my-cluster-name           # set the default context to my-cluster-name
 k config get-contexts -o name                  # display the names of the contexts
-
 
 #EXTRACT THE CERTIFICATE OF A USER
 k config view --raw # manual way
@@ -100,8 +104,6 @@ k config view --raw -ojsonpath="{.users[?(.name == 'NAME')].user.client-certific
 k exec etcd-master -n kube-system etcdctl get --prefix -keys-only #to list all keys stored by kubernetes
 k exec POD -it -- bash #execute bash in the pod
 kubectl expose POD --port=80 --target-port=8000 #Create a service for a POD, which serves on port 80 and connects to the containers on port 8000
-ps -aux | grep kube-apiserver #view api-server options
-ps -aux | grep kube-controller-manager #view controller-manager options
 
 #CRICTL
 Normally used to find processes for tasks like finding malicious syscalls
@@ -140,7 +142,6 @@ kubectl top node
 kubectl rollout status deployment/DEPLOYMENT_NAME #remove all the replicas and then recreate it
 kubectl rollout history deployment/DEPLOYMENT_NAME
 kubectl describe deployment DEPLOYMENT_NAME #check how the changes were done
-
 
 #--CLUSTER MAINTENANCE--#
 #Pod-eviction-timeout: time to a pod to come back online after a node goes down. Default = 5 minutes
@@ -181,8 +182,7 @@ kubectl uncordon NODE_NAME
 #finally verify it
 kubectl get nodes
 
-
-#BACKUP RESOURCE CONFIGS
+#ETCD BACKUP RESOURCE CONFIGS 
 kubectl get all --all-namespaces -o yaml > ALL-DEPLOY-SERVICES.yaml #backup of the configuration
 cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep 'etcd'
 ETCDCTL_APY=3 etcdctl snapshot save NAME.db #backup of a ETCD database
@@ -215,4 +215,3 @@ All the Client Certificates for clients have to have a copy of the public certif
 4- add an entry to /etc/hosts with the IP addres of the command "k --kubeconfig FILE https://10.10.10.10:PORT" and the name "kubernetes"
 5- then change the IP of the FILE "server" entry with "kubernetes:PORT"
 6- test now with the command "k --kubeconfig FILE get pods/svc/deploy..."
-

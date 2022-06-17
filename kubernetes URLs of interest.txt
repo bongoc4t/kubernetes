@@ -1,0 +1,16 @@
+https://learnk8s.io/troubleshooting-deployments #important
+https://laurinevala.medium.com/visualizing-kubernetes-resources-ee9d8c16d264  #proyect that create visual maps of Pods
+https://grapeup.com/blog/common-kubernetes-failures-at-scale/
+https://www.itprotoday.com/hybrid-cloud/8-problems-kubernetes-architecture
+
+https://blog.pipetail.io/posts/2020-05-04-most-common-mistakes-k8s/
+- resources - requests and limits -> OOMkill
+- liveness and readiness probes
+- LoadBalancer for every http service
+- non-kubernetes-aware cluster autoscaling
+- Not using the power of IAM/RBAC
+- self anti-affinities for pods
+- no poddisruptionbudget -> pod upgrade
+- more tenants or envs in shared cluster
+- externalTrafficPolicy: Cluster
+- pet clusters + stressing the control plane too much
