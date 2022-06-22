@@ -10,11 +10,16 @@ alias kds='kubectl describe service'
 alias kdn='kubectl describe node'
 source <(kubectl completion bash)
 complete -F __start_kubectl k
-export do="--dry-run=client -o yaml" 
-export now="--force --grace-period 0" #fast pod delete
+export do="--dry-run=client -o yaml" # dry-run means dont create and -o is output format
+export now="--force --grace-period 0" # fast pod delete
 
 #- VIM
 To make vim use 2 spaces for a tab edit ~/.vimrc to contain:
 set tabstop=2
 set expandtab
 set shiftwidth=2
+
+
+#- DECLARATIVE WAY
+kubernetes run nginx --image=nginx
+kubernetes run nginx --image=nginx --dry-run=client -o yaml # dry-run means dont create and -o is output format

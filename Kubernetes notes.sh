@@ -71,7 +71,7 @@ decide which pod goes where.
 Its a process that runs inside all nodes in the kubernetes cluster, its job is to look for new services, and once a new service is created then the rules are created on each node to forward the traffic to each pod. One way to do it is with IPTABLES rules
 - kube-proxy is deployed as a deamonset so in every node it will be always one kube-proxy
 
-#TSHOOT COMMANDS
+#POD COMMANDS
 kubectl get pod -A POD
 kubectl get pod -o wide POD
 kubectl describe pod POD
@@ -79,6 +79,63 @@ kubectl describe pod POD
 - Container logs are automatically rotated daily and every time the log file reaches 10MB. 'kubectl logs' command only shows the log entries for the last rotation.
 Kubectl logs -p POD #logs of previos pods in case of restart/reset
 kubectl logs MULTIPOD -c POD #to check the logs of one of the containers
+
+#SERVICES NOTES & COMMANDS
+An abstract way to expose an application running on a set of Pods as a network service.
+    - Type ClusterIP;
+        - Exposes the Service on a cluster-internal IP. 
+        - Choosing this value makes the Service only reachable from within the cluster. This is the default ServiceType.
+
+    - Type NodePort;
+        - If you set the type field to NodePort, the Kubernetes control plane allocates a port from a range specified by --service-node-port-range flag (default: 30000-32767). 
+        - Each node proxies that port (the same port number on every Node) into your Service. Your Service reports the allocated port in its .spec.ports[*].nodePort field.
+------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  type: NodePort
+  selector:
+    app: MyApp
+  ports:
+      # By default and for convenience, the `targetPort` is set to the same value as the `port` field.
+    - port: 80
+      targetPort: 80
+      # Optional field
+      # By default and for convenience, the Kubernetes control plane will allocate a port from a range (default: 30000-32767)
+      nodePort: 30007
+------------------------------
+
+    - Type LoadBalancer; 
+        - Traffic from the external load balancer is directed at the backend Pods. 
+        - The cloud provider decides how it is load balanced.
+        - The actual creation of the load balancer happens asynchronously, and information about the provisioned balancer is published in the Services '.status.loadBalancer'
+------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: MyApp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+  clusterIP: 10.0.171.239
+  type: LoadBalancer
+status:
+  loadBalancer:
+    ingress:
+    - ip: 192.0.2.127
+------------------------------
+
+To clarify in a simple way:
+ClusterIp exposure < NodePort exposure < LoadBalancer exposure
+ClusterIp = Expose service through k8s cluster with ip/name:port
+NodePort = Expose service through Internal network VMs also external to k8s ip/name:port
+LoadBalancer = Expose service through External world or whatever you defined in your LB.
 
 #DNS
 <Service>.<Namespace>.svc.cluster.local
